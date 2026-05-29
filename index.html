@@ -54,11 +54,19 @@
         </div>
         <div class="splash-card-arrow">›</div>
       </div>
+      <div class="splash-card" onclick="showStageSelect('gravity')">
+        <div class="splash-card-icon gravity-icon">🪐</div>
+        <div class="splash-card-info">
+          <div class="splash-card-title">GRAVITY NEON</div>
+          <div class="splash-card-desc">重力シフトと一時ブロックでボールをゴールへ</div>
+        </div>
+        <div class="splash-card-arrow">›</div>
+      </div>
     </div>
     <div class="splash-info">
-      <div class="info-item"><span class="info-num">2</span><span class="info-label">ゲーム</span></div>
+      <div class="info-item"><span class="info-num">3</span><span class="info-label">ゲーム</span></div>
       <div class="info-divider"></div>
-      <div class="info-item"><span class="info-num">100</span><span class="info-label">ステージ</span></div>
+      <div class="info-item"><span class="info-num">150</span><span class="info-label">ステージ</span></div>
       <div class="info-divider"></div>
       <div class="info-item"><span class="info-num">∞</span><span class="info-label">楽しさ</span></div>
     </div>
@@ -79,11 +87,15 @@
   <div class="tab-bar">
     <button class="tab-btn active" id="tab-flow-btn" onclick="switchTab('flow')">
       <span class="tab-icon">🌊</span>
-      <span class="tab-label">NEON FLOW</span>
+      <span class="tab-label">FLOW</span>
     </button>
     <button class="tab-btn" id="tab-picross-btn" onclick="switchTab('picross')">
       <span class="tab-icon">⬛</span>
       <span class="tab-label">PICROSS</span>
+    </button>
+    <button class="tab-btn" id="tab-gravity-btn" onclick="switchTab('gravity')">
+      <span class="tab-icon">🪐</span>
+      <span class="tab-label">GRAVITY</span>
     </button>
   </div>
 
@@ -92,6 +104,9 @@
 
   <!-- ピクロスステージグリッド -->
   <div class="stage-grid" id="picross-stage-grid" style="display:none"></div>
+
+  <!-- 重力ステージグリッド -->
+  <div class="stage-grid" id="gravity-stage-grid" style="display:none"></div>
 </div>
 
 <!-- NEON FLOW ゲーム画面 -->
@@ -162,6 +177,37 @@
   </div>
 </div>
 
+<!-- GRAVITY NEON ゲーム画面 -->
+<div id="gravity-screen" class="screen">
+  <div class="game-header">
+    <button class="btn-back" onclick="showStageSelect('gravity')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </button>
+    <div class="stage-info">
+      <span class="stage-label">GRAVITY</span>
+      <span class="stage-num" id="gravity-stage-num">1</span>
+    </div>
+    <div class="game-stats">
+      <div class="stat">
+        <span class="stat-label">手数</span>
+        <span class="stat-val" id="gravity-move-count">0</span>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="resetGravityStage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+  </div>
+  <div class="progress-bar-container">
+    <div class="block-indicator" id="block-limit-text">ブロック配置: 0 / 1</div>
+  </div>
+  <div class="game-area">
+    <canvas id="gravity-canvas"></canvas>
+  </div>
+  <div class="game-footer">
+    <div class="hint-text">タップで一時ブロック配置・スワイプで重力操作</div>
+  </div>
+</div>
+
 <!-- クリア演出（共通） -->
 <div id="clear-overlay" class="clear-overlay hidden">
   <div class="clear-card">
@@ -198,5 +244,6 @@
 <script src="stages.js"></script>
 <script src="game.js"></script>
 <script src="picross.js"></script>
+<script src="gravity.js"></script>
 </body>
 </html>
