@@ -1,25 +1,29 @@
 /**
- * NEON FLOW - ゲームエンジン
- * タッチ操作でドット間をパイプで繋ぐパズルゲーム
+ * NEON PUZZLE - フローゲームエンジン & 共通UI管理
  */
 
 // ===================================================
 // グローバル状態
 // ===================================================
+let currentTab = 'flow';       // 現在のタブ ('flow' or 'picross')
+let clearContext = 'flow';     // クリアオーバーレイのコンテキスト
+
+// --- フロー固有 ---
 let currentStageIndex = 0;
 let moveCount = 0;
-let paths = [];         // paths[colorIdx] = [[r,c], ...]
-let grid = [];          // grid[r][c] = { colorIdx: -1, dot: false }
-let dots = [];          // ドット位置
+let paths = [];
+let grid = [];
+let dots = [];
 let stageSize = 5;
 let isDragging = false;
 let dragColor = -1;
 let canvas, ctx;
 let cellSize = 0;
-let clearData = null;   // クリア済みステージのデータ
-let completedStages = {}; // { stageIndex: { stars, moves } }
+let completedStages = {};
 
-// セル描画マージン
+// --- ピクロス固有（picross.jsで使用） ---
+let completedPicrossStages = {};
+
 const MARGIN_RATIO = 0.12;
 
 // ===================================================
@@ -34,9 +38,15 @@ window.addEventListener('DOMContentLoaded', () => {
     const saved = localStorage.getItem('neonflow_progress');
     if (saved) completedStages = JSON.parse(saved);
   } catch(e) {}
+  try {
+    const savedP = localStorage.getItem('neonflow_picross_progress');
+    if (savedP) completedPicrossStages = JSON.parse(savedP);
+  } catch(e) {}
 
-  buildStageSelectGrid();
+  buildFlowSelectGrid();
+  buildPicrossSelectGrid();
   setupTouchEvents();
+  initPicross(); // picross.js で定義
 });
 
 // ===================================================
@@ -48,12 +58,15 @@ function showScreen(id) {
 }
 
 function showSplash() {
+  hideClearOverlay();
   showScreen('splash-screen');
 }
 
-function showStageSelect() {
+function showStageSelect(tab) {
   hideClearOverlay();
-  buildStageSelectGrid();
+  if (tab) switchTab(tab);
+  buildFlowSelectGrid();
+  buildPicrossSelectGrid();
   showScreen('stage-select-screen');
 }
 
@@ -64,31 +77,77 @@ function showGame(stageIndex) {
 }
 
 // ===================================================
+// タブ管理
+// ===================================================
+function switchTab(tab) {
+  currentTab = tab;
+  const flowGrid    = document.getElementById('flow-stage-grid');
+  const picrossGrid = document.getElementById('picross-stage-grid');
+  const flowBtn     = document.getElementById('tab-flow-btn');
+  const picrossBtn  = document.getElementById('tab-picross-btn');
+
+  if (tab === 'flow') {
+    flowGrid.style.display    = '';
+    picrossGrid.style.display = 'none';
+    flowBtn.classList.add('active');
+    picrossBtn.classList.remove('active');
+  } else {
+    flowGrid.style.display    = 'none';
+    picrossGrid.style.display = '';
+    flowBtn.classList.remove('active');
+    picrossBtn.classList.add('active');
+  }
+}
+
+// ===================================================
 // ステージ選択グリッド生成
 // ===================================================
-function buildStageSelectGrid() {
-  const grid = document.getElementById('stage-grid');
-  grid.innerHTML = '';
-  STAGE_DATA.forEach((stage, i) => {
+function buildFlowSelectGrid() {
+  const container = document.getElementById('flow-stage-grid');
+  container.innerHTML = '';
+  STAGE_DATA.forEach((_, i) => {
     const btn = document.createElement('button');
-    btn.className = 'stage-btn' + (completedStages[i] ? ' cleared' : '');
-    btn.id = `stage-btn-${i+1}`;
+    const cleared = completedStages[i];
+    btn.className = 'stage-btn' + (cleared ? ' cleared-flow' : '');
+    btn.id = `flow-stage-btn-${i + 1}`;
 
-    const stars = completedStages[i] ? completedStages[i].stars : 0;
+    const stars = cleared ? cleared.stars : 0;
     const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
 
     btn.innerHTML = `
       <span class="stage-num-text">${i + 1}</span>
-      <span class="stage-check">✓</span>
-      <span class="stage-stars" style="color:${stars>0?'#ffe66d':'rgba(255,255,255,0.2)'}">${starStr}</span>
+      <span class="stage-check" style="color:#4ecdc4">✓</span>
+      <span class="stage-stars" style="color:${stars > 0 ? '#ffe66d' : 'rgba(255,255,255,0.15)'}">${starStr}</span>
     `;
     btn.addEventListener('click', () => showGame(i));
-    grid.appendChild(btn);
+    container.appendChild(btn);
+  });
+}
+
+function buildPicrossSelectGrid() {
+  const container = document.getElementById('picross-stage-grid');
+  container.innerHTML = '';
+  PICROSS_STAGES.forEach((_, i) => {
+    const btn = document.createElement('button');
+    const cleared = completedPicrossStages[i];
+    btn.className = 'stage-btn' + (cleared ? ' cleared-picross' : '');
+    btn.id = `picross-stage-btn-${i + 1}`;
+
+    const stars = cleared ? cleared.stars : 0;
+    const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+
+    btn.innerHTML = `
+      <span class="stage-num-text">${i + 1}</span>
+      <span class="stage-check" style="color:#a29bfe">✓</span>
+      <span class="stage-stars" style="color:${stars > 0 ? '#ffe66d' : 'rgba(255,255,255,0.15)'}">${starStr}</span>
+    `;
+    btn.addEventListener('click', () => showPicrossGame(i));
+    container.appendChild(btn);
   });
 }
 
 // ===================================================
-// ステージ読み込み
+// ステージ読み込み（フロー）
 // ===================================================
 function loadStage(index) {
   const stage = STAGE_DATA[index];
@@ -97,18 +156,13 @@ function loadStage(index) {
   paths = [];
   dots = [];
 
-  // パス初期化
   const colorCount = Math.max(...stage.dots.map(d => d[2])) + 1;
-  for (let i = 0; i < colorCount; i++) {
-    paths.push([]);
-  }
+  for (let i = 0; i < colorCount; i++) paths.push([]);
 
-  // ドット設定
   stage.dots.forEach(d => {
     dots.push({ row: d[0], col: d[1], colorIdx: d[2] });
   });
 
-  // グリッド初期化
   grid = [];
   for (let r = 0; r < stageSize; r++) {
     grid[r] = [];
@@ -116,14 +170,10 @@ function loadStage(index) {
       grid[r][c] = { colorIdx: -1, isDot: false };
     }
   }
-
-  // ドットをグリッドに配置
   dots.forEach(d => {
     grid[d.row][d.col].isDot = true;
-    grid[d.row][d.col].colorIdx = -1;
   });
 
-  // UI更新
   document.getElementById('current-stage-num').textContent = index + 1;
   document.getElementById('move-count').textContent = 0;
   document.getElementById('hint-text').textContent = 'ドットをスワイプして同じ色を繋ごう';
@@ -134,75 +184,62 @@ function loadStage(index) {
 }
 
 // ===================================================
-// Canvas リサイズ
+// Canvas リサイズ（フロー）
 // ===================================================
 function resizeCanvas() {
-  const area = document.querySelector('.game-area');
-  const areaW = area.clientWidth - 32;
-  const areaH = area.clientHeight - 32;
+  const area = document.querySelector('#game-screen .game-area');
+  const areaW = area.clientWidth - 28;
+  const areaH = area.clientHeight - 28;
   const size = Math.min(areaW, areaH);
-
   canvas.width = size;
   canvas.height = size;
-  canvas.style.width = size + 'px';
+  canvas.style.width  = size + 'px';
   canvas.style.height = size + 'px';
-
   cellSize = size / stageSize;
 }
 
 window.addEventListener('resize', () => {
   if (document.getElementById('game-screen').classList.contains('active')) {
-    resizeCanvas();
-    drawAll();
+    resizeCanvas(); drawAll();
+  }
+  if (document.getElementById('picross-screen').classList.contains('active')) {
+    resizePicross(); drawPicross();
   }
 });
 
 // ===================================================
-// 描画
+// 描画（フロー）
 // ===================================================
 function drawAll() {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-
   drawGrid();
   drawPaths();
   drawDots();
 }
 
 function drawGrid() {
-  // 背景
   ctx.fillStyle = '#0d0d1f';
   roundRect(ctx, 0, 0, canvas.width, canvas.height, 12);
   ctx.fill();
 
-  // グリッド線
   ctx.strokeStyle = 'rgba(255,255,255,0.06)';
   ctx.lineWidth = 1;
-
   for (let r = 0; r <= stageSize; r++) {
     const y = r * cellSize;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(canvas.width, y);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
   for (let c = 0; c <= stageSize; c++) {
     const x = c * cellSize;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, canvas.height);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
   }
 
-  // 埋まったセルのハイライト
   for (let r = 0; r < stageSize; r++) {
     for (let c = 0; c < stageSize; c++) {
       const colorIdx = getCellColor(r, c);
       if (colorIdx >= 0) {
-        const color = COLORS[colorIdx];
-        const x = c * cellSize;
-        const y = r * cellSize;
-        ctx.fillStyle = color.main + '18';
+        const x = c * cellSize, y = r * cellSize;
+        ctx.fillStyle = COLORS[colorIdx].main + '18';
         ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
       }
     }
@@ -210,13 +247,10 @@ function drawGrid() {
 }
 
 function drawPaths() {
-  const margin = cellSize * MARGIN_RATIO;
   const lineW = cellSize * (1 - MARGIN_RATIO * 2) * 0.65;
-
   paths.forEach((path, colorIdx) => {
     if (path.length < 2) return;
     const color = COLORS[colorIdx];
-
     ctx.save();
     ctx.shadowColor = color.glow;
     ctx.shadowBlur = 12;
@@ -224,13 +258,11 @@ function drawPaths() {
     ctx.lineWidth = lineW;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-
     ctx.beginPath();
     path.forEach((pt, i) => {
       const x = pt[1] * cellSize + cellSize / 2;
       const y = pt[0] * cellSize + cellSize / 2;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
     ctx.restore();
@@ -239,35 +271,25 @@ function drawPaths() {
 
 function drawDots() {
   const dotR = cellSize * 0.32;
-
   dots.forEach(d => {
     const color = COLORS[d.colorIdx];
     const x = d.col * cellSize + cellSize / 2;
     const y = d.row * cellSize + cellSize / 2;
-
-    // グロー効果
     ctx.save();
     ctx.shadowColor = color.glow;
     ctx.shadowBlur = 18;
-
-    // 外円（リング）
     ctx.beginPath();
     ctx.arc(x, y, dotR, 0, Math.PI * 2);
     ctx.fillStyle = color.main;
     ctx.fill();
-
-    // 内側ハイライト
     ctx.beginPath();
     ctx.arc(x, y, dotR * 0.55, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(255,255,255,0.35)';
     ctx.fill();
-
     ctx.restore();
 
-    // 接続済みドットの縁取り
-    const isConnected = paths[d.colorIdx] && paths[d.colorIdx].some(
-      pt => pt[0] === d.row && pt[1] === d.col
-    );
+    const isConnected = paths[d.colorIdx] &&
+      paths[d.colorIdx].some(pt => pt[0] === d.row && pt[1] === d.col);
     if (isConnected) {
       ctx.beginPath();
       ctx.arc(x, y, dotR + 2.5, 0, Math.PI * 2);
@@ -293,88 +315,55 @@ function roundRect(ctx, x, y, w, h, r) {
 }
 
 // ===================================================
-// セルの色を取得（パスから）
+// セルの色を取得
 // ===================================================
 function getCellColor(r, c) {
   for (let colorIdx = 0; colorIdx < paths.length; colorIdx++) {
-    const path = paths[colorIdx];
-    for (let i = 0; i < path.length; i++) {
-      if (path[i][0] === r && path[i][1] === c) return colorIdx;
-    }
+    if (paths[colorIdx].some(pt => pt[0] === r && pt[1] === c)) return colorIdx;
   }
   return -1;
 }
 
 // ===================================================
-// タッチイベント設定
+// タッチ操作（フロー）
 // ===================================================
 function setupTouchEvents() {
   canvas.addEventListener('touchstart', onTouchStart, { passive: false });
-  canvas.addEventListener('touchmove', onTouchMove, { passive: false });
-  canvas.addEventListener('touchend', onTouchEnd, { passive: false });
-
-  canvas.addEventListener('mousedown', onMouseDown);
-  canvas.addEventListener('mousemove', onMouseMove);
-  canvas.addEventListener('mouseup', onMouseUp);
+  canvas.addEventListener('touchmove',  onTouchMove,  { passive: false });
+  canvas.addEventListener('touchend',   onTouchEnd,   { passive: false });
+  canvas.addEventListener('mousedown',  onMouseDown);
+  canvas.addEventListener('mousemove',  onMouseMove);
+  canvas.addEventListener('mouseup',    onMouseUp);
 }
 
 function getCell(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
-  const x = clientX - rect.left;
-  const y = clientY - rect.top;
-  const col = Math.floor(x / cellSize);
-  const row = Math.floor(y / cellSize);
+  const x = clientX - rect.left, y = clientY - rect.top;
+  const col = Math.floor(x / cellSize), row = Math.floor(y / cellSize);
   if (row < 0 || row >= stageSize || col < 0 || col >= stageSize) return null;
   return { row, col };
 }
 
-function onTouchStart(e) {
-  e.preventDefault();
-  const t = e.touches[0];
-  startDrag(t.clientX, t.clientY);
-}
+function onTouchStart(e) { e.preventDefault(); const t = e.touches[0]; startDrag(t.clientX, t.clientY); }
+function onTouchMove(e)  { e.preventDefault(); const t = e.touches[0]; continueDrag(t.clientX, t.clientY); }
+function onTouchEnd(e)   { e.preventDefault(); endDrag(); }
+function onMouseDown(e)  { startDrag(e.clientX, e.clientY); }
+function onMouseMove(e)  { if (isDragging) continueDrag(e.clientX, e.clientY); }
+function onMouseUp(e)    { endDrag(); }
 
-function onTouchMove(e) {
-  e.preventDefault();
-  const t = e.touches[0];
-  continueDrag(t.clientX, t.clientY);
-}
-
-function onTouchEnd(e) {
-  e.preventDefault();
-  endDrag();
-}
-
-function onMouseDown(e) { startDrag(e.clientX, e.clientY); }
-function onMouseMove(e) { if (isDragging) continueDrag(e.clientX, e.clientY); }
-function onMouseUp(e) { endDrag(); }
-
-// ===================================================
-// ドラッグ操作
-// ===================================================
 function startDrag(clientX, clientY) {
   const cell = getCell(clientX, clientY);
   if (!cell) return;
-
-  // ドット上か確認
   const dot = getDotAt(cell.row, cell.col);
   if (dot) {
     isDragging = true;
     dragColor = dot.colorIdx;
-
-    // 既存パスをクリア（そのドットから）
-    clearPathFrom(dragColor, cell.row, cell.col);
-
-    // パスを開始
     paths[dragColor] = [[cell.row, cell.col]];
     moveCount++;
     document.getElementById('move-count').textContent = moveCount;
-    drawAll();
-    updateProgressBar();
+    drawAll(); updateProgressBar();
     return;
   }
-
-  // パス上のセルか確認（パスを途中から再描画）
   const existingColor = getCellColor(cell.row, cell.col);
   if (existingColor >= 0) {
     isDragging = true;
@@ -382,8 +371,7 @@ function startDrag(clientX, clientY) {
     truncatePathAt(dragColor, cell.row, cell.col);
     moveCount++;
     document.getElementById('move-count').textContent = moveCount;
-    drawAll();
-    updateProgressBar();
+    drawAll(); updateProgressBar();
   }
 }
 
@@ -391,64 +379,40 @@ function continueDrag(clientX, clientY) {
   if (!isDragging || dragColor < 0) return;
   const cell = getCell(clientX, clientY);
   if (!cell) return;
-
   const path = paths[dragColor];
   if (path.length === 0) return;
-
   const last = path[path.length - 1];
-
-  // 同じセル
   if (last[0] === cell.row && last[1] === cell.col) return;
-
-  // 隣接チェック
-  const dr = Math.abs(cell.row - last[0]);
-  const dc = Math.abs(cell.col - last[1]);
+  const dr = Math.abs(cell.row - last[0]), dc = Math.abs(cell.col - last[1]);
   if (dr + dc !== 1) return;
 
-  // パスを戻る（縮める）場合
+  // 戻る
   if (path.length >= 2) {
     const prev = path[path.length - 2];
     if (prev[0] === cell.row && prev[1] === cell.col) {
-      path.pop();
-      drawAll();
-      updateProgressBar();
-      return;
+      path.pop(); drawAll(); updateProgressBar(); return;
     }
   }
 
-  // 自色のドット（ゴール）に到達
+  // ゴールドットに到達
   const targetDot = getDotAt(cell.row, cell.col);
   if (targetDot && targetDot.colorIdx === dragColor) {
-    // スタートと同じセルは戻るだけ
-    if (isSameStart(dragColor, cell.row, cell.col)) {
-      // 何もしない（折り返し禁止）
-      return;
-    }
-    // ゴールに到達
+    if (isSameStart(dragColor, cell.row, cell.col)) return;
     path.push([cell.row, cell.col]);
-    drawAll();
-    updateProgressBar();
-    // 少し遅延してクリア判定（描画完了後）
+    drawAll(); updateProgressBar();
     setTimeout(checkClear, 50);
-    endDrag();
-    return;
+    endDrag(); return;
   }
 
   // 他のドットには進めない
   if (getDotAt(cell.row, cell.col)) return;
 
-  // 他の色のパスがあれば消す
   clearOtherPathAt(dragColor, cell.row, cell.col);
-
   path.push([cell.row, cell.col]);
-  drawAll();
-  updateProgressBar();
+  drawAll(); updateProgressBar();
 }
 
-function endDrag() {
-  isDragging = false;
-  dragColor = -1;
-}
+function endDrag() { isDragging = false; dragColor = -1; }
 
 // ===================================================
 // パス操作ユーティリティ
@@ -456,153 +420,125 @@ function endDrag() {
 function getDotAt(row, col) {
   return dots.find(d => d.row === row && d.col === col) || null;
 }
-
 function isSameStart(colorIdx, row, col) {
   const path = paths[colorIdx];
-  if (path.length === 0) return false;
-  const start = path[0];
-  return start[0] === row && start[1] === col;
+  if (!path.length) return false;
+  return path[0][0] === row && path[0][1] === col;
 }
-
-function clearPathFrom(colorIdx, row, col) {
-  // そのカラーのパスをクリア
-  paths[colorIdx] = [];
-}
-
 function truncatePathAt(colorIdx, row, col) {
   const path = paths[colorIdx];
   const idx = path.findIndex(pt => pt[0] === row && pt[1] === col);
-  if (idx >= 0) {
-    paths[colorIdx] = path.slice(0, idx + 1);
-  }
+  if (idx >= 0) paths[colorIdx] = path.slice(0, idx + 1);
 }
-
 function clearOtherPathAt(myColor, row, col) {
   for (let colorIdx = 0; colorIdx < paths.length; colorIdx++) {
     if (colorIdx === myColor) continue;
-    const path = paths[colorIdx];
-    const idx = path.findIndex(pt => pt[0] === row && pt[1] === col);
-    if (idx >= 0) {
-      paths[colorIdx] = path.slice(0, idx);
-    }
+    const idx = paths[colorIdx].findIndex(pt => pt[0] === row && pt[1] === col);
+    if (idx >= 0) paths[colorIdx] = paths[colorIdx].slice(0, idx);
   }
 }
 
 // ===================================================
-// プログレスバー更新
+// プログレスバー
 // ===================================================
 function updateProgressBar() {
-  let filledCells = 0;
   const total = stageSize * stageSize;
-
-  // パスが通っているセルを数える
   const counted = new Set();
-  paths.forEach(path => {
-    path.forEach(pt => {
-      const key = pt[0] * 100 + pt[1];
-      if (!counted.has(key)) {
-        counted.add(key);
-        filledCells++;
-      }
-    });
-  });
-
-  const pct = Math.round((filledCells / total) * 100);
+  paths.forEach(path => path.forEach(pt => counted.add(pt[0] * 100 + pt[1])));
+  const pct = Math.round((counted.size / total) * 100);
   document.getElementById('fill-bar').style.width = pct + '%';
   document.getElementById('fill-label').textContent = pct + '%';
 }
 
 // ===================================================
-// クリア判定
+// クリア判定（フロー）
 // ===================================================
 function isPathComplete(colorIdx) {
   const path = paths[colorIdx];
   if (path.length < 2) return false;
-
-  const start = path[0];
-  const end = path[path.length - 1];
-
-  // 両端がドットか
+  const start = path[0], end = path[path.length - 1];
   const startDot = getDotAt(start[0], start[1]);
-  const endDot = getDotAt(end[0], end[1]);
-
+  const endDot   = getDotAt(end[0],   end[1]);
   return startDot && endDot &&
          startDot.colorIdx === colorIdx &&
-         endDot.colorIdx === colorIdx &&
+         endDot.colorIdx   === colorIdx &&
          (start[0] !== end[0] || start[1] !== end[1]);
 }
 
 function checkClear() {
-  // 全色がつながっているか
-  const allConnected = paths.every((_, i) => isPathComplete(i));
-  if (!allConnected) return;
-
-  // 全マスが埋まっているか
+  if (!paths.every((_, i) => isPathComplete(i))) return;
   const total = stageSize * stageSize;
   const counted = new Set();
-  paths.forEach(path => {
-    path.forEach(pt => counted.add(pt[0] * 100 + pt[1]));
-  });
-
+  paths.forEach(path => path.forEach(pt => counted.add(pt[0] * 100 + pt[1])));
   if (counted.size < total) return;
-
-  // クリア！
   onStageClear();
 }
 
 function onStageClear() {
-  // 評価（手数ベース）
   const perfectMoves = Math.ceil(stageSize * stageSize * 0.5);
   let stars = 1;
   if (moveCount <= perfectMoves) stars = 3;
   else if (moveCount <= perfectMoves * 1.8) stars = 2;
 
-  // 保存
   const prev = completedStages[currentStageIndex];
   if (!prev || prev.stars < stars) {
     completedStages[currentStageIndex] = { stars, moves: moveCount };
     localStorage.setItem('neonflow_progress', JSON.stringify(completedStages));
   }
-
-  // クリア演出
-  setTimeout(() => showClearOverlay(stars), 300);
+  buildFlowSelectGrid();
+  setTimeout(() => showClearOverlay('flow', stars), 300);
 }
 
 // ===================================================
-// クリアオーバーレイ
+// クリアオーバーレイ（共通）
 // ===================================================
-function showClearOverlay(stars) {
+function showClearOverlay(gameType, stars) {
+  clearContext = gameType;
   const overlay = document.getElementById('clear-overlay');
   overlay.classList.remove('hidden');
 
-  document.getElementById('clear-stage-num').textContent = `STAGE ${currentStageIndex + 1}`;
-  document.getElementById('clear-moves').textContent = moveCount;
+  const stageNum = gameType === 'flow' ? currentStageIndex + 1 : picrossStageIndex + 1;
+  const moves    = gameType === 'flow' ? moveCount : pMoveCount;
+  const label    = gameType === 'flow' ? 'STAGE' : 'PICROSS';
 
-  const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-  document.getElementById('clear-rating').textContent = starStr;
+  document.getElementById('clear-stage-num').textContent = `${label} ${stageNum}`;
+  document.getElementById('clear-moves').textContent = moves;
+  document.getElementById('clear-rating').textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
 
-  // 星アニメーションリセット
   ['star1','star2','star3'].forEach((id, i) => {
     const el = document.getElementById(id);
-    el.style.opacity = '0';
-    el.style.transform = 'scale(0)';
     el.style.animation = 'none';
     void el.offsetHeight;
-
     const show = i < stars;
     el.textContent = show ? '⭐' : '☆';
     el.style.color = show ? '#ffe66d' : 'rgba(255,255,255,0.2)';
     el.style.animation = `star-appear 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) ${0.3 + i * 0.2}s forwards`;
   });
 
-  // 次ステージボタン
-  const btnNext = document.getElementById('btn-next');
-  if (currentStageIndex >= STAGE_DATA.length - 1) {
-    btnNext.textContent = '🎉 全クリア！';
-    btnNext.onclick = () => showSplash();
+  // ボタン設定
+  const btnRetry = document.getElementById('btn-retry');
+  const btnNext  = document.getElementById('btn-next');
+
+  if (gameType === 'flow') {
+    btnRetry.onclick = () => { hideClearOverlay(); resetStage(); };
+    const isLast = currentStageIndex >= STAGE_DATA.length - 1;
+    if (isLast) {
+      btnNext.innerHTML = '🎉 全クリア！';
+      btnNext.onclick = () => showSplash();
+    } else {
+      btnNext.innerHTML = `次のステージ <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+      btnNext.onclick = () => { hideClearOverlay(); nextStage(); };
+    }
   } else {
-    btnNext.innerHTML = `次のステージ <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-    btnNext.onclick = nextStage;
+    btnRetry.onclick = () => { hideClearOverlay(); resetPicross(); };
+    const isLast = picrossStageIndex >= PICROSS_STAGES.length - 1;
+    if (isLast) {
+      btnNext.innerHTML = '🎉 全クリア！';
+      btnNext.onclick = () => showSplash();
+    } else {
+      btnNext.innerHTML = `次のステージ <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+      btnNext.onclick = () => { hideClearOverlay(); nextPicross(); };
+    }
   }
 }
 
@@ -611,7 +547,7 @@ function hideClearOverlay() {
 }
 
 // ===================================================
-// アクション
+// アクション（フロー）
 // ===================================================
 function resetStage() {
   hideClearOverlay();
@@ -619,8 +555,5 @@ function resetStage() {
 }
 
 function nextStage() {
-  hideClearOverlay();
-  if (currentStageIndex < STAGE_DATA.length - 1) {
-    showGame(currentStageIndex + 1);
-  }
+  if (currentStageIndex < STAGE_DATA.length - 1) showGame(currentStageIndex + 1);
 }

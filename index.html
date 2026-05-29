@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <meta name="description" content="ネオンフロー - 美しいネオンパズルゲーム。同じ色のドットをパイプで繋ぎ、全マスを埋めよう。50ステージ収録。">
-  <title>NEON FLOW - ネオンパズル</title>
+  <meta name="description" content="ネオンパズル集 - NEON FLOWとPICROSS、2種類のパズルが楽しめる。各50ステージ収録。">
+  <title>NEON PUZZLE - ネオンパズル</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -34,16 +34,31 @@
           <path d="M15 65 Q10 40 15 15" stroke="#a29bfe" stroke-width="4" fill="none" stroke-linecap="round"/>
         </svg>
       </div>
-      <h1 class="logo-title">NEON<span>FLOW</span></h1>
-      <p class="logo-subtitle">ネオンパズル</p>
+      <h1 class="logo-title">NEON<span>PUZZLE</span></h1>
+      <p class="logo-subtitle">2種類のネオンパズル</p>
     </div>
-    <p class="splash-desc">同じ色のドットをパイプで繋ぎ<br>全マスを埋めよう</p>
-    <button id="btn-start" class="btn-primary" onclick="showStageSelect()">
-      <span>ゲームスタート</span>
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-    </button>
+    <div class="splash-game-cards">
+      <div class="splash-card" onclick="showStageSelect('flow')">
+        <div class="splash-card-icon flow-icon">🌊</div>
+        <div class="splash-card-info">
+          <div class="splash-card-title">NEON FLOW</div>
+          <div class="splash-card-desc">同色のドットを繋ぎ全マスを埋める</div>
+        </div>
+        <div class="splash-card-arrow">›</div>
+      </div>
+      <div class="splash-card" onclick="showStageSelect('picross')">
+        <div class="splash-card-icon picross-icon">⬛</div>
+        <div class="splash-card-info">
+          <div class="splash-card-title">PICROSS</div>
+          <div class="splash-card-desc">数字ヒントでマスを塗りつぶす</div>
+        </div>
+        <div class="splash-card-arrow">›</div>
+      </div>
+    </div>
     <div class="splash-info">
-      <div class="info-item"><span class="info-num">50</span><span class="info-label">ステージ</span></div>
+      <div class="info-item"><span class="info-num">2</span><span class="info-label">ゲーム</span></div>
+      <div class="info-divider"></div>
+      <div class="info-item"><span class="info-num">100</span><span class="info-label">ステージ</span></div>
       <div class="info-divider"></div>
       <div class="info-item"><span class="info-num">∞</span><span class="info-label">楽しさ</span></div>
     </div>
@@ -56,16 +71,33 @@
     <button class="btn-back" onclick="showSplash()">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </button>
-    <h2>ステージ選択</h2>
+    <h2 id="select-header-title">ステージ選択</h2>
     <div class="header-space"></div>
   </div>
-  <div class="stage-grid" id="stage-grid"></div>
+
+  <!-- タブバー -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tab-flow-btn" onclick="switchTab('flow')">
+      <span class="tab-icon">🌊</span>
+      <span class="tab-label">NEON FLOW</span>
+    </button>
+    <button class="tab-btn" id="tab-picross-btn" onclick="switchTab('picross')">
+      <span class="tab-icon">⬛</span>
+      <span class="tab-label">PICROSS</span>
+    </button>
+  </div>
+
+  <!-- フローステージグリッド -->
+  <div class="stage-grid" id="flow-stage-grid"></div>
+
+  <!-- ピクロスステージグリッド -->
+  <div class="stage-grid" id="picross-stage-grid" style="display:none"></div>
 </div>
 
-<!-- ゲーム画面 -->
+<!-- NEON FLOW ゲーム画面 -->
 <div id="game-screen" class="screen">
   <div class="game-header">
-    <button class="btn-back" onclick="showStageSelect()">
+    <button class="btn-back" onclick="showStageSelect('flow')">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
     </button>
     <div class="stage-info">
@@ -82,22 +114,55 @@
       <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
     </button>
   </div>
-
   <div class="progress-bar-container">
     <div class="progress-bar" id="fill-bar"></div>
     <span class="progress-label" id="fill-label">0%</span>
   </div>
-
   <div class="game-area">
     <canvas id="game-canvas"></canvas>
   </div>
-
   <div class="game-footer">
-    <div class="hint-text" id="hint-text">ドットを長押し or スワイプして繋ごう</div>
+    <div class="hint-text" id="hint-text">ドットをスワイプして同じ色を繋ごう</div>
   </div>
 </div>
 
-<!-- クリア演出 -->
+<!-- PICROSS ゲーム画面 -->
+<div id="picross-screen" class="screen">
+  <div class="game-header">
+    <button class="btn-back" onclick="showStageSelect('picross')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </button>
+    <div class="stage-info">
+      <span class="stage-label">PICROSS</span>
+      <span class="stage-num" id="picross-stage-num">1</span>
+    </div>
+    <div class="game-stats">
+      <div class="stat">
+        <span class="stat-label">手数</span>
+        <span class="stat-val" id="picross-move-count">0</span>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="resetPicross()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+  </div>
+  <div class="game-area">
+    <canvas id="picross-canvas"></canvas>
+  </div>
+  <div class="game-footer">
+    <div class="picross-mode-bar">
+      <button id="picross-fill-btn" class="mode-btn active" onclick="setPicrossMode('fill')">
+        <span class="mode-icon">■</span> 塗る
+      </button>
+      <button id="picross-x-btn" class="mode-btn" onclick="setPicrossMode('x')">
+        <span class="mode-icon">✕</span> メモ
+      </button>
+    </div>
+    <div class="hint-text">タップで塗る・長押しまたはメモボタンでX印</div>
+  </div>
+</div>
+
+<!-- クリア演出（共通） -->
 <div id="clear-overlay" class="clear-overlay hidden">
   <div class="clear-card">
     <div class="clear-stars">
@@ -118,11 +183,11 @@
       </div>
     </div>
     <div class="clear-buttons">
-      <button class="btn-clear-action" id="btn-retry" onclick="resetStage()">
+      <button class="btn-clear-action" id="btn-retry">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
         やり直し
       </button>
-      <button class="btn-clear-next" id="btn-next" onclick="nextStage()">
+      <button class="btn-clear-next" id="btn-next">
         次のステージ
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
       </button>
@@ -132,5 +197,6 @@
 
 <script src="stages.js"></script>
 <script src="game.js"></script>
+<script src="picross.js"></script>
 </body>
 </html>
