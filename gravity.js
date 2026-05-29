@@ -29,8 +29,7 @@ let gTouchStartX = 0;
 let gTouchStartY = 0;
 const SWIPE_THRESHOLD = 30; // スワイプと判定する最小ピクセル数
 
-// 保存用データ
-let completedGravityStages = {};
+// 保存用データ（game.jsのグローバル変数を再利用するため宣言は不要）
 
 // ===================================================
 // 初期化
