@@ -1218,3 +1218,567 @@ const PICROSS_STAGES = [
   ]},
 ];
 
+// ============================================================
+// GRAVITY NEON STAGES - 50ステージ
+// format:
+// {
+//   size: グリッドサイズ (5x5〜9x9),
+//   blockLimit: 配置できるブロックの最大数 (1〜2),
+//   walls: [[row, col], ...], // 永久の壁
+//   balls: [{ r, c, color }, ...], // 初期位置のボール (color: 0=赤, 1=シアン, 2=黄, 3=紫, 4=ピンク, 5=オレンジ, 6=緑, 7=青)
+//   goals: [{ r, c, color }, ...], // ゴール
+//   portals: [{ r1, c1, r2, c2, color }, ...], // ポータルのペア（オプション）
+//   arrows: [{ r, c, dir }, ...] // 一方向矢印床: dir = 'up'|'down'|'left'|'right'（オプション）
+// }
+// ============================================================
+const GRAVITY_STAGES = [
+  // === 5x5 ステージ (1〜10): 基礎・ボール1個・ブロック1個 ===
+  {
+    // Stage 1: 重力の基本
+    size: 5, blockLimit: 1,
+    walls: [[3, 0]],
+    balls: [{ r: 0, c: 0, color: 0 }],
+    goals: [{ r: 4, c: 4, color: 0 }]
+  },
+  {
+    // Stage 2: 角の利用
+    size: 5, blockLimit: 1,
+    walls: [[1, 3], [3, 1]],
+    balls: [{ r: 0, c: 0, color: 1 }],
+    goals: [{ r: 4, c: 4, color: 1 }]
+  },
+  {
+    // Stage 3: ブロック配置の基本
+    size: 5, blockLimit: 1,
+    walls: [[2, 2]],
+    balls: [{ r: 0, c: 4, color: 2 }],
+    goals: [{ r: 4, c: 0, color: 2 }]
+  },
+  {
+    // Stage 4: ジグザグ
+    size: 5, blockLimit: 1,
+    walls: [[1, 1], [3, 3], [0, 4]],
+    balls: [{ r: 0, c: 0, color: 3 }],
+    goals: [{ r: 4, c: 4, color: 3 }]
+  },
+  {
+    // Stage 5: 回り道
+    size: 5, blockLimit: 1,
+    walls: [[2, 0], [2, 1], [2, 3], [2, 4]],
+    balls: [{ r: 0, c: 2, color: 4 }],
+    goals: [{ r: 4, c: 2, color: 4 }]
+  },
+  {
+    // Stage 6: 狭い通り道
+    size: 5, blockLimit: 1,
+    walls: [[0, 2], [1, 2], [3, 2], [4, 2]],
+    balls: [{ r: 2, c: 0, color: 5 }],
+    goals: [{ r: 2, c: 4, color: 5 }]
+  },
+  {
+    // Stage 7: スパイラル
+    size: 5, blockLimit: 1,
+    walls: [[1, 1], [1, 2], [1, 3], [3, 1], [3, 2], [3, 3], [2, 1]],
+    balls: [{ r: 0, c: 0, color: 6 }],
+    goals: [{ r: 2, c: 2, color: 6 }]
+  },
+  {
+    // Stage 8: 二者択一の壁
+    size: 5, blockLimit: 1,
+    walls: [[0, 1], [4, 3]],
+    balls: [{ r: 2, c: 2, color: 7 }],
+    goals: [{ r: 4, c: 4, color: 7 }]
+  },
+  {
+    // Stage 9: ポケット
+    size: 5, blockLimit: 1,
+    walls: [[1, 0], [1, 1], [1, 3], [1, 4]],
+    balls: [{ r: 0, c: 2, color: 0 }],
+    goals: [{ r: 2, c: 2, color: 0 }]
+  },
+  {
+    // Stage 10: 最後の5x5
+    size: 5, blockLimit: 1,
+    walls: [[0, 3], [2, 1], [4, 2]],
+    balls: [{ r: 4, c: 0, color: 1 }],
+    goals: [{ r: 0, c: 4, color: 1 }]
+  },
+
+  // === 6x6 ステージ (11〜20): ブロック2個 または 迷路設計 ===
+  {
+    // Stage 11: 6x6の広さ
+    size: 6, blockLimit: 1,
+    walls: [[1, 1], [4, 4]],
+    balls: [{ r: 0, c: 0, color: 2 }],
+    goals: [{ r: 5, c: 5, color: 2 }]
+  },
+  {
+    // Stage 12: ブロック2個の初導入
+    size: 6, blockLimit: 2,
+    walls: [[2, 2], [3, 3]],
+    balls: [{ r: 0, c: 5, color: 3 }],
+    goals: [{ r: 5, c: 0, color: 3 }]
+  },
+  {
+    // Stage 13: 障害物迷路
+    size: 6, blockLimit: 1,
+    walls: [[0, 3], [2, 1], [3, 4], [5, 2]],
+    balls: [{ r: 0, c: 0, color: 4 }],
+    goals: [{ r: 5, c: 5, color: 4 }]
+  },
+  {
+    // Stage 14: 中央クロス
+    size: 6, blockLimit: 1,
+    walls: [[2, 2], [2, 3], [3, 2], [3, 3]],
+    balls: [{ r: 0, c: 2, color: 5 }],
+    goals: [{ r: 5, c: 3, color: 5 }]
+  },
+  {
+    // Stage 15: ブロック2個のダブル反射
+    size: 6, blockLimit: 2,
+    walls: [[1, 4], [4, 1]],
+    balls: [{ r: 0, c: 0, color: 6 }],
+    goals: [{ r: 5, c: 5, color: 6 }]
+  },
+  {
+    // Stage 16: 袋小路
+    size: 6, blockLimit: 1,
+    walls: [[1, 1], [1, 2], [1, 3], [3, 3], [3, 4], [3, 5]],
+    balls: [{ r: 0, c: 5, color: 7 }],
+    goals: [{ r: 5, c: 0, color: 7 }]
+  },
+  {
+    // Stage 17: Uターン
+    size: 6, blockLimit: 1,
+    walls: [[2, 0], [2, 1], [2, 2], [2, 3], [2, 4]],
+    balls: [{ r: 1, c: 2, color: 0 }],
+    goals: [{ r: 3, c: 2, color: 0 }]
+  },
+  {
+    // Stage 18: クロスガード
+    size: 6, blockLimit: 1,
+    walls: [[0, 2], [2, 5], [5, 3], [3, 0]],
+    balls: [{ r: 1, c: 1, color: 1 }],
+    goals: [{ r: 4, c: 4, color: 1 }]
+  },
+  {
+    // Stage 19: ダブルブロック複雑迷路
+    size: 6, blockLimit: 2,
+    walls: [[1, 1], [2, 4], [4, 2], [3, 5]],
+    balls: [{ r: 0, c: 0, color: 2 }],
+    goals: [{ r: 5, c: 4, color: 2 }]
+  },
+  {
+    // Stage 20: 6x6ラスト
+    size: 6, blockLimit: 1,
+    walls: [[0, 5], [1, 1], [3, 2], [4, 4]],
+    balls: [{ r: 5, c: 0, color: 3 }],
+    goals: [{ r: 2, c: 3, color: 3 }]
+  },
+
+  // === 7x7 ステージ (21〜30): 複数ボール登場・クッションの技術 ===
+  {
+    // Stage 21: 二色のボール（ぶつかり合いなし）
+    size: 7, blockLimit: 1,
+    walls: [[3, 3]],
+    balls: [
+      { r: 0, c: 0, color: 0 },
+      { r: 0, c: 6, color: 1 }
+    ],
+    goals: [
+      { r: 6, c: 0, color: 0 },
+      { r: 6, c: 6, color: 1 }
+    ]
+  },
+  {
+    // Stage 22: 初めてのクッション（互いをクッションにする）
+    size: 7, blockLimit: 1,
+    walls: [[0, 3], [6, 3]],
+    balls: [
+      { r: 3, c: 0, color: 2 },
+      { r: 3, c: 6, color: 2 }
+    ],
+    goals: [
+      { r: 1, c: 3, color: 2 },
+      { r: 5, c: 3, color: 2 }
+    ]
+  },
+  {
+    // Stage 23: クッションでの方向転換
+    size: 7, blockLimit: 1,
+    walls: [[1, 1], [5, 5]],
+    balls: [
+      { r: 0, c: 0, color: 3 },
+      { r: 0, c: 6, color: 4 }
+    ],
+    goals: [
+      { r: 6, c: 0, color: 3 },
+      { r: 6, c: 6, color: 4 }
+    ]
+  },
+  {
+    // Stage 24: シンクロナイズド転がし
+    size: 7, blockLimit: 1,
+    walls: [[2, 2], [4, 4]],
+    balls: [
+      { r: 1, c: 1, color: 5 },
+      { r: 5, c: 5, color: 6 }
+    ],
+    goals: [
+      { r: 1, c: 5, color: 5 },
+      { r: 5, c: 1, color: 6 }
+    ]
+  },
+  {
+    // Stage 25: 3つ玉！
+    size: 7, blockLimit: 1,
+    walls: [[3, 1], [3, 5]],
+    balls: [
+      { r: 0, c: 3, color: 0 },
+      { r: 6, c: 1, color: 1 },
+      { r: 6, c: 5, color: 2 }
+    ],
+    goals: [
+      { r: 6, c: 3, color: 0 },
+      { r: 0, c: 1, color: 1 },
+      { r: 0, c: 5, color: 2 }
+    ]
+  },
+  {
+    // Stage 26: 互いを支える壁
+    size: 7, blockLimit: 1,
+    walls: [[2, 1], [4, 5]],
+    balls: [
+      { r: 0, c: 0, color: 3 },
+      { r: 6, c: 6, color: 3 }
+    ],
+    goals: [
+      { r: 3, c: 3, color: 3 },
+      { r: 4, c: 4, color: 3 }
+    ]
+  },
+  {
+    // Stage 27: 2個配置＋2ボール
+    size: 7, blockLimit: 2,
+    walls: [[1, 3], [5, 3]],
+    balls: [
+      { r: 3, c: 1, color: 4 },
+      { r: 3, c: 5, color: 5 }
+    ],
+    goals: [
+      { r: 1, c: 1, color: 4 },
+      { r: 5, c: 5, color: 5 }
+    ]
+  },
+  {
+    // Stage 28: グリッド迷宮
+    size: 7, blockLimit: 1,
+    walls: [[0, 2], [2, 0], [4, 6], [6, 4], [3, 3]],
+    balls: [{ r: 0, c: 0, color: 6 }],
+    goals: [{ r: 6, c: 6, color: 6 }]
+  },
+  {
+    // Stage 29: 三色の星空
+    size: 7, blockLimit: 2,
+    walls: [[1, 5], [5, 1]],
+    balls: [
+      { r: 0, c: 3, color: 7 },
+      { r: 3, c: 0, color: 0 },
+      { r: 6, c: 3, color: 1 }
+    ],
+    goals: [
+      { r: 6, c: 6, color: 7 },
+      { r: 0, c: 0, color: 0 },
+      { r: 3, c: 6, color: 1 }
+    ]
+  },
+  {
+    // Stage 30: 重力交差点
+    size: 7, blockLimit: 1,
+    walls: [[1, 1], [1, 5], [5, 1], [5, 5]],
+    balls: [
+      { r: 3, c: 1, color: 2 },
+      { r: 3, c: 5, color: 3 }
+    ],
+    goals: [
+      { r: 1, c: 3, color: 2 },
+      { r: 5, c: 3, color: 3 }
+    ]
+  },
+
+  // === 8x8 ステージ (31〜40): ポータル（ワープ）ギミック導入 ===
+  {
+    // Stage 31: ワープの基本 (中央に1対のポータル)
+    size: 8, blockLimit: 1,
+    walls: [[2, 2], [5, 5]],
+    balls: [{ r: 0, c: 0, color: 4 }],
+    goals: [{ r: 7, c: 7, color: 4 }],
+    portals: [
+      { r1: 1, c1: 4, r2: 6, c2: 3, color: 4 } // ピンクのポータル
+    ]
+  },
+  {
+    // Stage 32: ダブルポータル
+    size: 8, blockLimit: 1,
+    walls: [[0, 7], [7, 0]],
+    balls: [{ r: 0, c: 0, color: 5 }],
+    goals: [{ r: 7, c: 7, color: 5 }],
+    portals: [
+      { r1: 2, c1: 2, r2: 5, c2: 5, color: 5 }, // シアン
+      { r1: 1, c1: 6, r2: 6, c2: 1, color: 2 }  // 黄色
+    ]
+  },
+  {
+    // Stage 33: ループトラップ（無限ループを避けてゴールする）
+    size: 8, blockLimit: 1,
+    walls: [[3, 1], [4, 6]],
+    balls: [{ r: 1, c: 1, color: 6 }],
+    goals: [{ r: 6, c: 6, color: 6 }],
+    portals: [
+      { r1: 2, c1: 5, r2: 5, c1: 2, r2: 5, c2: 2, color: 6 } // 緑
+    ]
+  },
+  {
+    // Stage 34: ワープクッション
+    size: 8, blockLimit: 1,
+    walls: [[2, 5], [5, 2]],
+    balls: [
+      { r: 0, c: 1, color: 7 },
+      { r: 7, c: 6, color: 0 }
+    ],
+    goals: [
+      { r: 7, c: 1, color: 7 },
+      { r: 0, c: 6, color: 0 }
+    ],
+    portals: [
+      { r1: 3, c1: 3, r2: 4, c2: 4, color: 7 }
+    ]
+  },
+  {
+    // Stage 35: ブロック2個＋複雑ワープ
+    size: 8, blockLimit: 2,
+    walls: [[1, 1], [6, 6]],
+    balls: [{ r: 0, c: 7, color: 1 }],
+    goals: [{ r: 7, c: 0, color: 1 }],
+    portals: [
+      { r1: 2, c1: 5, r2: 5, c2: 2, color: 1 },
+      { r1: 1, c1: 2, r2: 6, c2: 5, color: 3 }
+    ]
+  },
+  {
+    // Stage 36: ポータル交差
+    size: 8, blockLimit: 1,
+    walls: [[0, 3], [7, 4]],
+    balls: [
+      { r: 2, c: 1, color: 2 },
+      { r: 5, c: 6, color: 3 }
+    ],
+    goals: [
+      { r: 5, c: 1, color: 2 },
+      { r: 2, c: 6, color: 3 }
+    ],
+    portals: [
+      { r1: 1, c1: 4, r2: 6, c2: 3, color: 2 }
+    ]
+  },
+  {
+    // Stage 37: 矢印パネルの初登場 (一方向床)
+    size: 8, blockLimit: 1,
+    walls: [[1, 5]],
+    balls: [{ r: 0, c: 2, color: 4 }],
+    goals: [{ r: 7, c: 2, color: 4 }],
+    arrows: [
+      { r: 3, c: 2, dir: 'down' }, // 下のみ通過可
+      { r: 4, c: 2, dir: 'down' }
+    ]
+  },
+  {
+    // Stage 38: 矢印誘導路
+    size: 8, blockLimit: 1,
+    walls: [[3, 3]],
+    balls: [{ r: 0, c: 0, color: 5 }],
+    goals: [{ r: 7, c: 7, color: 5 }],
+    arrows: [
+      { r: 2, c: 2, dir: 'right' },
+      { r: 2, c: 5, dir: 'down' },
+      { r: 5, c: 5, dir: 'left' },
+      { r: 5, c: 2, dir: 'down' }
+    ]
+  },
+  {
+    // Stage 39: 逆流禁止迷路
+    size: 8, blockLimit: 1,
+    walls: [[1, 1], [6, 6]],
+    balls: [{ r: 0, c: 0, color: 6 }],
+    goals: [{ r: 7, c: 7, color: 6 }],
+    arrows: [
+      { r: 3, c: 3, dir: 'up' }, // 逆方向にしか進めないマス
+      { r: 4, c: 4, dir: 'left' }
+    ]
+  },
+  {
+    // Stage 40: ポータル＆矢印ミックス
+    size: 8, blockLimit: 1,
+    walls: [[2, 2], [5, 5]],
+    balls: [{ r: 0, c: 7, color: 7 }],
+    goals: [{ r: 7, c: 0, color: 7 }],
+    portals: [
+      { r1: 1, c1: 3, r2: 6, c2: 4, color: 7 }
+    ],
+    arrows: [
+      { r: 3, c: 4, dir: 'down' },
+      { r: 4, c: 3, dir: 'up' }
+    ]
+  },
+
+  // === 9x9 ステージ (41〜50): 最大盤面・ギミック総動員の超難問 ===
+  {
+    // Stage 41: 9x9の広大な迷宮
+    size: 9, blockLimit: 1,
+    walls: [[1, 2], [3, 4], [5, 6], [7, 0]],
+    balls: [{ r: 0, c: 0, color: 0 }],
+    goals: [{ r: 8, c: 8, color: 0 }]
+  },
+  {
+    // Stage 42: ポータル網
+    size: 9, blockLimit: 1,
+    walls: [[2, 2], [6, 6]],
+    balls: [{ r: 0, c: 8, color: 1 }],
+    goals: [{ r: 8, c: 0, color: 1 }],
+    portals: [
+      { r1: 1, c1: 4, r2: 7, c2: 4, color: 1 },
+      { r1: 4, c1: 1, r2: 4, c2: 7, color: 2 }
+    ]
+  },
+  {
+    // Stage 43: クッション・オーケストラ
+    size: 9, blockLimit: 1,
+    walls: [[0, 4], [8, 4]],
+    balls: [
+      { r: 4, c: 0, color: 3 },
+      { r: 4, c: 8, color: 3 },
+      { r: 0, c: 0, color: 4 }
+    ],
+    goals: [
+      { r: 2, c: 4, color: 3 },
+      { r: 6, c: 4, color: 3 },
+      { r: 8, c: 8, color: 4 }
+    ]
+  },
+  {
+    // Stage 44: ワンウェイループ
+    size: 9, blockLimit: 1,
+    walls: [[4, 4]],
+    balls: [{ r: 0, c: 0, color: 5 }],
+    goals: [{ r: 8, c: 8, color: 5 }],
+    arrows: [
+      { r: 2, c: 2, dir: 'right' },
+      { r: 2, c: 6, dir: 'down' },
+      { r: 6, c: 6, dir: 'left' },
+      { r: 6, c: 2, dir: 'up' }
+    ]
+  },
+  {
+    // Stage 45: 宇宙の交差点
+    size: 9, blockLimit: 2,
+    walls: [[1, 1], [7, 7]],
+    balls: [
+      { r: 0, c: 4, color: 6 },
+      { r: 8, c: 4, color: 7 }
+    ],
+    goals: [
+      { r: 8, c: 0, color: 6 },
+      { r: 0, c: 8, color: 7 }
+    ],
+    portals: [
+      { r1: 3, c1: 3, r2: 5, c2: 5, color: 6 }
+    ]
+  },
+  {
+    // Stage 46: 進入禁止
+    size: 9, blockLimit: 1,
+    walls: [[3, 3], [5, 5]],
+    balls: [{ r: 0, c: 0, color: 0 }],
+    goals: [{ r: 4, c: 4, color: 0 }],
+    arrows: [
+      { r: 3, c: 4, dir: 'down' },
+      { r: 4, c: 3, dir: 'right' },
+      { r: 5, c: 4, dir: 'up' },
+      { r: 4, c: 5, dir: 'left' }
+    ]
+  },
+  {
+    // Stage 47: トリプルカラー＆ダブルブロック
+    size: 9, blockLimit: 2,
+    walls: [[2, 2], [6, 6], [4, 4]],
+    balls: [
+      { r: 0, c: 0, color: 1 },
+      { r: 0, c: 8, color: 2 },
+      { r: 8, c: 0, color: 3 }
+    ],
+    goals: [
+      { r: 8, c: 8, color: 1 },
+      { r: 8, c: 4, color: 2 },
+      { r: 4, c: 8, color: 3 }
+    ]
+  },
+  {
+    // Stage 48: 矢印スパイラル
+    size: 9, blockLimit: 1,
+    walls: [[0, 8], [8, 0]],
+    balls: [{ r: 4, c: 4, color: 4 }],
+    goals: [{ r: 0, c: 0, color: 4 }],
+    arrows: [
+      { r: 3, c: 3, dir: 'up' },
+      { r: 3, c: 4, dir: 'right' },
+      { r: 3, c: 5, dir: 'right' },
+      { r: 4, c: 5, dir: 'down' },
+      { r: 5, c: 5, dir: 'down' },
+      { r: 5, c: 4, dir: 'left' },
+      { r: 5, c: 3, dir: 'left' }
+    ]
+  },
+  {
+    // Stage 49: カオス・ポータル
+    size: 9, blockLimit: 2,
+    walls: [[1, 7], [7, 1]],
+    balls: [
+      { r: 0, c: 0, color: 5 },
+      { r: 8, c: 8, color: 6 }
+    ],
+    goals: [
+      { r: 8, c: 0, color: 5 },
+      { r: 0, c: 8, color: 6 }
+    ],
+    portals: [
+      { r1: 2, c1: 2, r2: 6, c2: 6, color: 5 },
+      { r1: 2, c1: 6, r2: 6, c2: 2, color: 6 }
+    ]
+  },
+  {
+    // Stage 50: GRAVITY NEON 最終試練 (9x9, ブロック2個, ボール3個, 複合ギミック)
+    size: 9, blockLimit: 2,
+    walls: [[2, 2], [2, 6], [6, 2], [6, 6], [4, 4]],
+    balls: [
+      { r: 0, c: 4, color: 0 }, // 赤
+      { r: 4, c: 0, color: 1 }, // シアン
+      { r: 8, c: 4, color: 2 }  // 黄色
+    ],
+    goals: [
+      { r: 8, c: 8, color: 0 },
+      { r: 0, c: 0, color: 1 },
+      { r: 0, c: 8, color: 2 }
+    ],
+    portals: [
+      { r1: 1, c1: 1, r2: 7, c2: 7, color: 3 } // 紫ポータル
+    ],
+    arrows: [
+      { r: 3, c: 4, dir: 'down' },
+      { r: 5, c: 4, dir: 'up' },
+      { r: 4, c: 3, dir: 'right' },
+      { r: 4, c: 5, dir: 'left' }
+    ]
+  }
+];
+
+

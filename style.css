@@ -21,6 +21,7 @@
   --border: rgba(255,255,255,0.08);
   --tab-flow: #4ecdc4;
   --tab-picross: #a29bfe;
+  --tab-gravity: #ff9f43;
 }
 
 /* リセット */
@@ -182,17 +183,23 @@ html, body {
   background: rgba(255,255,255,0.07);
 }
 
-.splash-card:first-child {
+.splash-card:nth-child(1) {
   border-color: rgba(78,205,196,0.2);
 }
-.splash-card:first-child:active {
+.splash-card:nth-child(1):active {
   box-shadow: 0 0 20px rgba(78,205,196,0.15);
 }
-.splash-card:last-child {
+.splash-card:nth-child(2) {
   border-color: rgba(162,155,254,0.2);
 }
-.splash-card:last-child:active {
+.splash-card:nth-child(2):active {
   box-shadow: 0 0 20px rgba(162,155,254,0.15);
+}
+.splash-card:nth-child(3) {
+  border-color: rgba(255,159,67,0.2);
+}
+.splash-card:nth-child(3):active {
+  box-shadow: 0 0 20px rgba(255,159,67,0.15);
 }
 
 .splash-card-icon {
@@ -212,6 +219,10 @@ html, body {
 .picross-icon {
   background: linear-gradient(135deg, rgba(162,155,254,0.2), rgba(162,155,254,0.05));
   border: 1px solid rgba(162,155,254,0.25);
+}
+.gravity-icon {
+  background: linear-gradient(135deg, rgba(255,159,67,0.2), rgba(255,159,67,0.05));
+  border: 1px solid rgba(255,159,67,0.25);
 }
 
 .splash-card-info {
@@ -371,6 +382,8 @@ html, body {
 #tab-flow-btn.active::after { background: var(--tab-flow); box-shadow: 0 0 8px rgba(78,205,196,0.6); }
 #tab-picross-btn.active { color: var(--tab-picross); }
 #tab-picross-btn.active::after { background: var(--tab-picross); box-shadow: 0 0 8px rgba(162,155,254,0.6); }
+#tab-gravity-btn.active { color: var(--tab-gravity); }
+#tab-gravity-btn.active::after { background: var(--tab-gravity); box-shadow: 0 0 8px rgba(255,159,67,0.6); }
 
 .tab-icon { font-size: 16px; }
 .tab-label { font-size: 10px; }
@@ -414,21 +427,16 @@ html, body {
 }
 .stage-btn:active { transform: scale(0.9); }
 
-/* フロー用クリア状態 */
-.stage-btn.cleared-flow {
-  background: linear-gradient(135deg, rgba(78,205,196,0.12), rgba(78,205,196,0.04));
-  border-color: rgba(78,205,196,0.3);
-}
-
-/* ピクロス用クリア状態 */
-.stage-btn.cleared-picross {
-  background: linear-gradient(135deg, rgba(162,155,254,0.12), rgba(162,155,254,0.04));
-  border-color: rgba(162,155,254,0.3);
+/* 重力用クリア状態 */
+.stage-btn.cleared-gravity {
+  background: linear-gradient(135deg, rgba(255,159,67,0.12), rgba(255,159,67,0.04));
+  border-color: rgba(255,159,67,0.3);
 }
 
 .stage-btn .stage-check { display: none; }
 .stage-btn.cleared-flow .stage-check,
-.stage-btn.cleared-picross .stage-check { display: block; font-size: 9px; }
+.stage-btn.cleared-picross .stage-check,
+.stage-btn.cleared-gravity .stage-check { display: block; font-size: 9px; }
 
 .stage-num-text { font-size: 15px; }
 .stage-stars { font-size: 7px; letter-spacing: 0.5px; }
@@ -436,7 +444,7 @@ html, body {
 /* ============================================
    ゲーム画面（共通）
    ============================================ */
-#game-screen, #picross-screen {
+#game-screen, #picross-screen, #gravity-screen {
   background: var(--bg-primary);
 }
 
@@ -473,6 +481,7 @@ html, body {
   text-align: center;
 }
 #picross-screen .stage-num { color: var(--accent-4); text-shadow: 0 0 12px rgba(162,155,254,0.8); }
+#gravity-screen .stage-num { color: var(--tab-gravity); text-shadow: 0 0 12px rgba(255,159,67,0.8); }
 
 .game-stats { display: flex; gap: 10px; }
 
@@ -534,6 +543,24 @@ html, body {
   touch-action: none;
   border-radius: 12px;
   box-shadow: 0 0 40px rgba(78,205,196,0.08), 0 20px 60px rgba(0,0,0,0.5);
+}
+#gravity-canvas {
+  touch-action: none;
+  border-radius: 12px;
+  box-shadow: 0 0 40px rgba(255,159,67,0.08), 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.block-indicator {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--tab-gravity);
+  text-shadow: 0 0 8px rgba(255,159,67,0.5);
+  z-index: 1;
 }
 
 .game-footer {

@@ -24,6 +24,9 @@ let completedStages = {};
 // --- ピクロス固有（picross.jsで使用） ---
 let completedPicrossStages = {};
 
+// --- 重力固有（gravity.jsで使用） ---
+let completedGravityStages = {};
+
 const MARGIN_RATIO = 0.12;
 
 // ===================================================
@@ -42,9 +45,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const savedP = localStorage.getItem('neonflow_picross_progress');
     if (savedP) completedPicrossStages = JSON.parse(savedP);
   } catch(e) {}
+  try {
+    const savedG = localStorage.getItem('neonflow_gravity_progress');
+    if (savedG) completedGravityStages = JSON.parse(savedG);
+  } catch(e) {}
 
   buildFlowSelectGrid();
   buildPicrossSelectGrid();
+  buildGravitySelectGrid();
   setupTouchEvents();
   initPicross(); // picross.js で定義
 });
@@ -67,6 +75,7 @@ function showStageSelect(tab) {
   if (tab) switchTab(tab);
   buildFlowSelectGrid();
   buildPicrossSelectGrid();
+  buildGravitySelectGrid();
   showScreen('stage-select-screen');
 }
 
@@ -83,19 +92,28 @@ function switchTab(tab) {
   currentTab = tab;
   const flowGrid    = document.getElementById('flow-stage-grid');
   const picrossGrid = document.getElementById('picross-stage-grid');
+  const gravityGrid = document.getElementById('gravity-stage-grid');
   const flowBtn     = document.getElementById('tab-flow-btn');
   const picrossBtn  = document.getElementById('tab-picross-btn');
+  const gravityBtn  = document.getElementById('tab-gravity-btn');
+
+  // 全て非表示・非アクティブにする
+  flowGrid.style.display    = 'none';
+  picrossGrid.style.display = 'none';
+  if (gravityGrid) gravityGrid.style.display = 'none';
+  flowBtn.classList.remove('active');
+  picrossBtn.classList.remove('active');
+  if (gravityBtn) gravityBtn.classList.remove('active');
 
   if (tab === 'flow') {
     flowGrid.style.display    = '';
-    picrossGrid.style.display = 'none';
     flowBtn.classList.add('active');
-    picrossBtn.classList.remove('active');
-  } else {
-    flowGrid.style.display    = 'none';
+  } else if (tab === 'picross') {
     picrossGrid.style.display = '';
-    flowBtn.classList.remove('active');
     picrossBtn.classList.add('active');
+  } else if (tab === 'gravity') {
+    if (gravityGrid) gravityGrid.style.display = '';
+    if (gravityBtn) gravityBtn.classList.add('active');
   }
 }
 
@@ -142,6 +160,29 @@ function buildPicrossSelectGrid() {
       <span class="stage-stars" style="color:${stars > 0 ? '#ffe66d' : 'rgba(255,255,255,0.15)'}">${starStr}</span>
     `;
     btn.addEventListener('click', () => showPicrossGame(i));
+    container.appendChild(btn);
+  });
+}
+
+function buildGravitySelectGrid() {
+  const container = document.getElementById('gravity-stage-grid');
+  if (!container) return;
+  container.innerHTML = '';
+  GRAVITY_STAGES.forEach((_, i) => {
+    const btn = document.createElement('button');
+    const cleared = completedGravityStages[i];
+    btn.className = 'stage-btn' + (cleared ? ' cleared-gravity' : '');
+    btn.id = `gravity-stage-btn-${i + 1}`;
+
+    const stars = cleared ? cleared.stars : 0;
+    const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+
+    btn.innerHTML = `
+      <span class="stage-num-text">${i + 1}</span>
+      <span class="stage-check" style="color:#ff9f43">✓</span>
+      <span class="stage-stars" style="color:${stars > 0 ? '#ffe66d' : 'rgba(255,255,255,0.15)'}">${starStr}</span>
+    `;
+    btn.addEventListener('click', () => showGravityGame(i));
     container.appendChild(btn);
   });
 }
@@ -497,9 +538,23 @@ function showClearOverlay(gameType, stars) {
   const overlay = document.getElementById('clear-overlay');
   overlay.classList.remove('hidden');
 
-  const stageNum = gameType === 'flow' ? currentStageIndex + 1 : picrossStageIndex + 1;
-  const moves    = gameType === 'flow' ? moveCount : pMoveCount;
-  const label    = gameType === 'flow' ? 'STAGE' : 'PICROSS';
+  let stageNum = 1;
+  let moves = 0;
+  let label = 'STAGE';
+
+  if (gameType === 'flow') {
+    stageNum = currentStageIndex + 1;
+    moves = moveCount;
+    label = 'STAGE';
+  } else if (gameType === 'picross') {
+    stageNum = picrossStageIndex + 1;
+    moves = pMoveCount;
+    label = 'PICROSS';
+  } else if (gameType === 'gravity') {
+    stageNum = gravityStageIndex + 1;
+    moves = gMoveCount;
+    label = 'GRAVITY';
+  }
 
   document.getElementById('clear-stage-num').textContent = `${label} ${stageNum}`;
   document.getElementById('clear-moves').textContent = moves;
@@ -529,7 +584,7 @@ function showClearOverlay(gameType, stars) {
       btnNext.innerHTML = `次のステージ <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
       btnNext.onclick = () => { hideClearOverlay(); nextStage(); };
     }
-  } else {
+  } else if (gameType === 'picross') {
     btnRetry.onclick = () => { hideClearOverlay(); resetPicross(); };
     const isLast = picrossStageIndex >= PICROSS_STAGES.length - 1;
     if (isLast) {
@@ -538,6 +593,16 @@ function showClearOverlay(gameType, stars) {
     } else {
       btnNext.innerHTML = `次のステージ <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
       btnNext.onclick = () => { hideClearOverlay(); nextPicross(); };
+    }
+  } else if (gameType === 'gravity') {
+    btnRetry.onclick = () => { hideClearOverlay(); resetGravityStage(); };
+    const isLast = gravityStageIndex >= GRAVITY_STAGES.length - 1;
+    if (isLast) {
+      btnNext.innerHTML = '🎉 全クリア！';
+      btnNext.onclick = () => showSplash();
+    } else {
+      btnNext.innerHTML = `次のステージ <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+      btnNext.onclick = () => { hideClearOverlay(); nextGravityStage(); };
     }
   }
 }
