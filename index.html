@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="description" content="ネオンフロー - 美しいネオンパズルゲーム。同じ色のドットをパイプで繋ぎ、全マスを埋めよう。50ステージ収録。">
+  <title>NEON FLOW - ネオンパズル</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- スプラッシュ画面 -->
+<div id="splash-screen" class="screen active">
+  <div class="splash-bg">
+    <div class="particle" style="--x:10%;--y:20%;--d:3s;--s:6px"></div>
+    <div class="particle" style="--x:80%;--y:10%;--d:4s;--s:4px"></div>
+    <div class="particle" style="--x:30%;--y:70%;--d:2.5s;--s:8px"></div>
+    <div class="particle" style="--x:60%;--y:40%;--d:5s;--s:5px"></div>
+    <div class="particle" style="--x:90%;--y:80%;--d:3.5s;--s:3px"></div>
+    <div class="particle" style="--x:20%;--y:90%;--d:4.5s;--s:7px"></div>
+    <div class="particle" style="--x:50%;--y:50%;--d:2s;--s:4px"></div>
+  </div>
+  <div class="splash-content">
+    <div class="logo-container">
+      <div class="logo-icon">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="15" cy="15" r="8" fill="#ff6b6b"/>
+          <circle cx="65" cy="15" r="8" fill="#4ecdc4"/>
+          <circle cx="15" cy="65" r="8" fill="#ffe66d"/>
+          <circle cx="65" cy="65" r="8" fill="#a29bfe"/>
+          <path d="M15 15 Q40 10 65 15" stroke="#ff6b6b" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M65 15 Q70 40 65 65" stroke="#4ecdc4" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M65 65 Q40 70 15 65" stroke="#ffe66d" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M15 65 Q10 40 15 15" stroke="#a29bfe" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 class="logo-title">NEON<span>FLOW</span></h1>
+      <p class="logo-subtitle">ネオンパズル</p>
+    </div>
+    <p class="splash-desc">同じ色のドットをパイプで繋ぎ<br>全マスを埋めよう</p>
+    <button id="btn-start" class="btn-primary" onclick="showStageSelect()">
+      <span>ゲームスタート</span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="splash-info">
+      <div class="info-item"><span class="info-num">50</span><span class="info-label">ステージ</span></div>
+      <div class="info-divider"></div>
+      <div class="info-item"><span class="info-num">∞</span><span class="info-label">楽しさ</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ステージ選択画面 -->
+<div id="stage-select-screen" class="screen">
+  <div class="screen-header">
+    <button class="btn-back" onclick="showSplash()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </button>
+    <h2>ステージ選択</h2>
+    <div class="header-space"></div>
+  </div>
+  <div class="stage-grid" id="stage-grid"></div>
+</div>
+
+<!-- ゲーム画面 -->
+<div id="game-screen" class="screen">
+  <div class="game-header">
+    <button class="btn-back" onclick="showStageSelect()">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+    </button>
+    <div class="stage-info">
+      <span class="stage-label">STAGE</span>
+      <span class="stage-num" id="current-stage-num">1</span>
+    </div>
+    <div class="game-stats">
+      <div class="stat">
+        <span class="stat-label">手数</span>
+        <span class="stat-val" id="move-count">0</span>
+      </div>
+    </div>
+    <button class="btn-reset" onclick="resetStage()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+    </button>
+  </div>
+
+  <div class="progress-bar-container">
+    <div class="progress-bar" id="fill-bar"></div>
+    <span class="progress-label" id="fill-label">0%</span>
+  </div>
+
+  <div class="game-area">
+    <canvas id="game-canvas"></canvas>
+  </div>
+
+  <div class="game-footer">
+    <div class="hint-text" id="hint-text">ドットを長押し or スワイプして繋ごう</div>
+  </div>
+</div>
+
+<!-- クリア演出 -->
+<div id="clear-overlay" class="clear-overlay hidden">
+  <div class="clear-card">
+    <div class="clear-stars">
+      <div class="star" id="star1">⭐</div>
+      <div class="star" id="star2">⭐</div>
+      <div class="star" id="star3">⭐</div>
+    </div>
+    <div class="clear-title">CLEAR!</div>
+    <div class="clear-stage" id="clear-stage-num">STAGE 1</div>
+    <div class="clear-score">
+      <div class="score-item">
+        <span class="score-label">手数</span>
+        <span class="score-val" id="clear-moves">0</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">評価</span>
+        <span class="score-val" id="clear-rating">★★★</span>
+      </div>
+    </div>
+    <div class="clear-buttons">
+      <button class="btn-clear-action" id="btn-retry" onclick="resetStage()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>
+        やり直し
+      </button>
+      <button class="btn-clear-next" id="btn-next" onclick="nextStage()">
+        次のステージ
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="stages.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
